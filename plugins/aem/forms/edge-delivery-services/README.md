@@ -14,13 +14,19 @@ Skills for building forms with **AEM Forms on Edge Delivery Services** — the F
 
 ## Built authoring JSON and review
 
-`create-custom-component` has no helper scripts. The agent does each step itself:
+`create-custom-component` doesn't run a scaffolder, `build:json` or browser tests. The agent writes every file itself and checks the result with one dependency-free validator:
 
 | Step | What the agent does |
 |------|---------------------|
 | Build | Instead of running `npm run build:json`, it does what [`merge-json-cli`](https://github.com/buuhuu/merge-json-cli) does by hand. It resolves the `"..."` includes in `_<name>.json` and merges the model, definition and filter entry into the root `component-models.json`, `component-definition.json` and `component-filters.json`. It also computes the `xwalk/max-cells` entry for the new model. See [`references/build-json.md`](skills/create-custom-component/references/build-json.md), which uses the boilerplate's `rating` component as the worked example |
-| Review | Checklist of naming, `fd:viewType`, includes, JS conventions (`subscribe` with `listenChanges`, bubbling `change`, `[data-id]` selectors), registration, generated JSON and README. Runs `npm run lint` when the project can run it |
+| Review | `node skills/create-custom-component/scripts/validate-component.mjs <name> [--root <project>] [--json]` checks naming, JSON schema, `fd:viewType`, `"..."` includes, JS conventions, registration, the hand-merged build output (including leftover `"..."`), and the `xwalk/max-cells` limit, and exits `1` on errors. A checklist covers what it can't check (loop guards, value commit timing, `component-filters.json`, unrelated diffs). Runs `npm run lint` when the project can run it |
 | User verification | Gives you concrete steps to try the component in a browser, asks for feedback, and iterates until you approve |
+
+The validator has unit tests:
+
+```bash
+node --test plugins/aem/forms/edge-delivery-services/tests/*.test.mjs
+```
 
 ## Evals
 

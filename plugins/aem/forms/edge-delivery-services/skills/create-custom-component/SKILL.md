@@ -26,8 +26,9 @@ Not for: generic Edge Delivery Services blocks (use the `building-blocks` skill 
 | `references/authoring-field-types.md` | Step 3 — widgets for the properties dialog (`text`, `select`, `container`, …) |
 | `references/subscribe-api.md` | Step 4 — `subscribe()` patterns: own value, child fields, custom events |
 | `references/build-json.md` | Steps 5 and 7 — merge the component into `component-models.json`, `component-definition.json` and `component-filters.json` yourself (what `npm run build:json` does), and count `xwalk/max-cells` |
+| `scripts/validate-component.mjs` | Step 8 — static validator (Node 18+, no dependencies) |
 
-Paths under `references/` are relative to this skill's directory.
+Paths under `scripts/` and `references/` are relative to this skill's directory. Resolve them to absolute paths before running commands from the repository root.
 
 ---
 
@@ -144,7 +145,7 @@ Implementation rules:
 2. If the component has no stylesheet, add it to `NO_CSS_COMPONENTS` when the project defines that set; otherwise keep `<name>.css`.
 3. `blocks/form/_form.json` — append `<name>` to the `"form"` filter `components` so authors can insert it.
 4. `models/_component-definition.json` — append `{ "...": "../blocks/form/components/<name>/_<name>.json#/definitions" }` to the `components` of the `custom-components` group (unless the project includes components by glob).
-5. Repository lint limits: check the project's ESLint config (`.eslintrc.cjs`, `eslint.config.*`, …) for per-model limits. The xwalk config usually sets `'xwalk/max-cells'`: it limits each model in the built `component-models.json` to 4 cells unless the model id has its own entry. A form component inherits its base type's fields, so it needs one. Count the cells of the resolved model (Step 7) as described in `references/build-json.md` §6, and add `'<name>': <cells>` next to the existing entries. Follow any other per-model lint options the repository defines the same way.
+5. Repository lint limits: check the project's ESLint config (`.eslintrc.cjs`, `eslint.config.*`, …) for per-model limits. The xwalk config usually sets `'xwalk/max-cells'`: it limits each model in the built `component-models.json` to 4 cells unless the model id has its own entry. A form component inherits its base type's fields, so it needs one. Count the cells of the resolved model (Step 7) as described in `references/build-json.md` §6 (the validator in Step 8 prints the exact count), and add `'<name>': <cells>` next to the existing entries. Follow any other per-model lint options the repository defines the same way.
 
 ### Step 6: Document
 
@@ -176,6 +177,14 @@ Without this, new properties never reach the Universal Editor. Treat the boilerp
 ### Step 8: Review (mandatory)
 
 Do not report the component as done until every check below passes. Fix any failure and check again.
+
+First run the static validator from the repository root:
+
+```bash
+node <skill-dir>/scripts/validate-component.mjs <name>
+```
+
+It automates most of checks A–D below: folder and file naming, valid JSON, definition and model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, the `subscribe` import and `{ listenChanges: true }`, `.js` import extensions, legacy patterns, README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the hand-merged `component-models.json` and `component-definition.json` contain the component with no `"..."` left, and the `xwalk/max-cells` limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix). Fix warnings or justify them in the report. Use `--json` for machine-readable output. Then go through the checklist for what it can't check (loop guards, commit timing, `component-filters.json`, an unchanged `git diff` for other entries).
 
 **A. Files and naming**
 - `blocks/form/components/<name>/` contains `<name>.js`, `_<name>.json`, `README.md`, and `<name>.css` (unless it's in `NO_CSS_COMPONENTS`).
@@ -209,7 +218,7 @@ If the user can't be reached (non-interactive run), skip the questions and inclu
 
 ### Step 10: Report
 
-Finish with: the files created or changed (including the three generated JSON files and the ESLint config), the results of each Step 8 check, the lint result (or why it couldn't run), the `xwalk/max-cells` count, the feedback rounds and changes made (or the browser verification steps if the user wasn't reachable), and anything left open.
+Finish with: the files created or changed (including the three generated JSON files and the ESLint config), the validator summary (errors/warnings) and the results of each Step 8 check, the lint result (or why it couldn't run), the `xwalk/max-cells` count, the feedback rounds and changes made (or the browser verification steps if the user wasn't reachable), and anything left open.
 
 ---
 
@@ -256,5 +265,5 @@ Finish with: the files created or changed (including the three generated JSON fi
 3. `star-rating.js`: hide the number input, render `maxStars` buttons, set `model.value` on click, sync the selected stars on `'change'` of `value`, using `subscribe(..., { listenChanges: true })`.
 4. Register in `mappings.js` / `_form.json` / `models/_component-definition.json`, and write `README.md`.
 5. Build by hand: resolve `_star-rating.json`'s includes into a flat `star-rating` model in `component-models.json` (next to `rating`), add its definition to the `custom-components` group in `component-definition.json`, and add `star-rating` to the `form` filter in `component-filters.json`. Count the resolved model's cells (the base `number-input` fields plus `maxStars`) and add `'star-rating': <count>` to `xwalk/max-cells`.
-6. Review (Step 8): all checks pass, and `npm run lint` is clean.
+6. Review (Step 8): `node <skill-dir>/scripts/validate-component.mjs star-rating` → `PASS: 0 error(s)`, the remaining checklist items pass, and `npm run lint` is clean.
 7. Ask the user to verify: the stars render, `maxStars: 3` renders 3 stars, a rule that sets the value to 4 selects 4 stars, clicking star 3 sets the value to `3` and fires change rules once, and Enter on a star works from the keyboard.
