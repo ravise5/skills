@@ -50,7 +50,7 @@
     {
       "name": "Fix report with verification",
       "max_score": 12,
-      "description": "`FIX-REPORT.md` lists the individual defects with file and cause, and for each states how it was verified (e.g. a validator/structural check, lint, or explicit statement that a check could not be run), without claiming runtime/browser verification that was not performed"
+      "description": "`FIX-REPORT.md` lists the individual defects with file and cause, and for each states how it was verified (e.g. a structural review, lint, or explicit statement that a check could not be run), without claiming runtime/browser verification that was not performed"
     }
   ]
 }

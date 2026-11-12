@@ -10,26 +10,17 @@ Skills for building forms with **AEM Forms on Edge Delivery Services** — the F
 
 | Skill | Description |
 |-------|-------------|
-| [`create-custom-component`](skills/create-custom-component/SKILL.md) | Create a custom form component that extends an OOTB field type: scaffold, authoring schema (`_<name>.json`), `decorate` + `subscribe()` model wiring, registration in `mappings.js`, README, `build:json`, and validation |
+| [`create-custom-component`](skills/create-custom-component/SKILL.md) | Create a custom form component that extends an OOTB field type: scaffold, authoring schema (`_<name>.json`), `decorate` + `subscribe()` model wiring, registration in `mappings.js`, README, built authoring JSON (merged by the agent), and review |
 
-## Validating generated components
+## Built authoring JSON and review
 
-`create-custom-component` treats validation as a required step, layered the same way other code-generating skills in this repo do (structural checks → lint/build → browser end-to-end test):
+`create-custom-component` has no helper scripts. The agent does each step itself:
 
-| Gate | How | Required |
-|------|-----|----------|
-| A. Static validation | `node skills/create-custom-component/scripts/validate-component.mjs <name> [--root <project>] [--json]` — deterministic checks of naming, JSON schema, `fd:viewType`, `"..."` includes, JS conventions, registration, build output, and the repository's `xwalk/max-cells` lint limit for the new model. Exit `1` on errors | Yes |
-| B. Lint | `npm run lint` in the forms project | Yes, if the project defines it |
-| C. Build | `npm run build:json`, then re-run gate A | Yes |
-| D. End-to-end | `node skills/create-custom-component/scripts/create-e2e-test.mjs <name>` generates a Playwright spec and form JSON in the repo's Playwright test folder (`<testDir>/custom-components/`, default `test/e2e`). The harness renders the form JSON in a local form block (`<pre><code>`) with the project's `aem.js`/`scripts.js` — no deployed form or URL. The agent fills in model ↔ UI, authored-property and keyboard assertions and runs `node skills/create-custom-component/scripts/run-e2e-test.mjs <name>` (the repo's own Playwright config, Chromium, no retries; a minimal config is added only if the repo has none, and a temporary standalone config is used if the repo's config fails to load) | Yes; reported as not run only if Playwright cannot be installed |
-
-After the gates pass, the skill opens the component for you to try (`skills/create-custom-component/scripts/preview-component.mjs <name>`): a Chromium window, or a local URL, rendering the form JSON with a live model inspector. It then asks for your feedback and iterates until you approve.
-
-The validator, e2e generator and preview have unit tests:
-
-```bash
-node --test plugins/aem/forms/edge-delivery-services/tests/*.test.mjs
-```
+| Step | What the agent does |
+|------|---------------------|
+| Build | Instead of running `npm run build:json`, it does what [`merge-json-cli`](https://github.com/buuhuu/merge-json-cli) does by hand. It resolves the `"..."` includes in `_<name>.json` and merges the model, definition and filter entry into the root `component-models.json`, `component-definition.json` and `component-filters.json`. It also computes the `xwalk/max-cells` entry for the new model. See [`references/build-json.md`](skills/create-custom-component/references/build-json.md), which uses the boilerplate's `rating` component as the worked example |
+| Review | Checklist of naming, `fd:viewType`, includes, JS conventions (`subscribe` with `listenChanges`, bubbling `change`, `[data-id]` selectors), registration, generated JSON and README. Runs `npm run lint` when the project can run it |
+| User verification | Gives you concrete steps to try the component in a browser, asks for feedback, and iterates until you approve |
 
 ## Evals
 

@@ -58,14 +58,14 @@
       "description": "`blocks/form/components/loan-slider/README.md` exists with a title, an authoring-properties / how-to-use section, and a usage-notes section naming the base type and viewType"
     },
     {
-      "name": "E2E test written",
+      "name": "Built authoring JSON merged",
       "max_score": 8,
-      "description": "A Playwright end-to-end test exists for the component (e.g. `test/e2e/custom-components/loan-slider/loan-slider.spec.js` with a form JSON whose field has `\":type\": \"loan-slider\"`) that renders the form locally (form JSON in the form block's `<pre><code>`, no deployed URL) and asserts: the component loads, a model value set programmatically updates the slider/label, and moving the slider updates the model value"
+      "description": "The agent merges the component into the built authoring JSON itself instead of only asking for `npm run build:json`. It either writes the generated root files (`component-models.json` with a `loan-slider` model whose `\"...\"` includes are fully resolved inline and that contains min/max/step, `component-definition.json` with the `loan-slider` definition, `component-filters.json` with `loan-slider` in the `form` filter), or, where a root `models/_component-*.json` source is missing, says the generated file can't be fully built and shows the resolved `loan-slider` model. No `\"...\"` key remains in any generated output"
     },
     {
       "name": "Honest validation report",
       "max_score": 8,
-      "description": "`VALIDATION.md` lists concrete checks performed on the generated files (e.g. a structural validator, lint, build:json) with their results, explicitly states which checks could not be run in this environment instead of claiming they passed, and gives browser verification steps (open a form using the component and confirm it loads/syncs with the model)"
+      "description": "`VALIDATION.md` lists concrete checks performed on the generated files (e.g. naming/registration/JSON review, the hand-merged build output, lint) with their results, explicitly states which checks could not be run in this environment instead of claiming they passed, and gives browser verification steps (open a form using the component and confirm it loads/syncs with the model)"
     }
   ]
 }

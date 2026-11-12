@@ -1,6 +1,6 @@
 ---
 name: create-custom-component
-description: "Create a custom form component for an AEM Forms Edge Delivery Services (Form block) project — scaffold blocks/form/components/<name>, extend an OOTB field type (text-input, drop-down, panel, etc.), define authoring properties in _<name>.json, wire the decorate function to the form model with subscribe(), register it in mappings.js, build, and validate the output. Use when a user asks to create, scaffold, build, or fix a custom form component, form field widget, or viewType in an aem-boilerplate-forms project."
+description: "Create a custom form component for an AEM Forms Edge Delivery Services (Form block) project — scaffold blocks/form/components/<name>, extend an OOTB field type (text-input, drop-down, panel, etc.), define authoring properties in _<name>.json, wire the decorate function to the form model with subscribe(), register it in mappings.js, merge the authoring JSON into the built component-*.json files, and review the output. Use when a user asks to create, scaffold, build, or fix a custom form component, form field widget, or viewType in an aem-boilerplate-forms project."
 license: Apache-2.0
 metadata:
   version: "1.0.0"
@@ -8,7 +8,7 @@ metadata:
 
 # Create Custom Form Component
 
-Build a custom component for the AEM Forms **Form block** on Edge Delivery Services end to end — scaffold, authoring schema, `decorate` logic, model subscriptions, registration, documentation — and **prove** it works before reporting done.
+Build a custom component for the AEM Forms **Form block** on Edge Delivery Services end to end — scaffold, authoring schema, `decorate` logic, model subscriptions, registration, built authoring JSON, documentation — and **review** it before reporting done.
 
 ## When to use
 
@@ -25,14 +25,9 @@ Not for: generic Edge Delivery Services blocks (use the `building-blocks` skill 
 | `references/form-field-types.md` | Step 4 — the base HTML the `element` parameter already contains |
 | `references/authoring-field-types.md` | Step 3 — widgets for the properties dialog (`text`, `select`, `container`, …) |
 | `references/subscribe-api.md` | Step 4 — `subscribe()` patterns: own value, child fields, custom events |
-| `scripts/validate-component.mjs` | Step 8 — static validator (Node 18+, no dependencies) |
-| `scripts/create-e2e-test.mjs` | Step 8 — generates the component's Playwright e2e test + form JSON |
-| `scripts/run-e2e-test.mjs` | Step 8 — runs those tests with the project's own Playwright setup (Chromium, no retries) |
-| `assets/e2e/form-harness.js` | Test harness copied into the project's e2e test folder by `create-e2e-test.mjs` |
-| `scripts/preview-component.mjs` | Step 9: opens the component in a browser, with a live model inspector, for user feedback |
-| `scripts/validate-registration.js` | Optional — in-page check on an already deployed form |
+| `references/build-json.md` | Steps 5 and 7 — merge the component into `component-models.json`, `component-definition.json` and `component-filters.json` yourself (what `npm run build:json` does), and count `xwalk/max-cells` |
 
-Paths under `scripts/`, `assets/` and `references/` are relative to this skill's directory; resolve them to absolute paths before running commands from the repository root.
+Paths under `references/` are relative to this skill's directory.
 
 ---
 
@@ -49,7 +44,7 @@ Run every command in this skill from the **repository root** — the directory c
 | Which authorable properties does it need? | Fields in `_<name>.json` |
 | What model state does it read/write, and when should `model.value` be committed? | Drives `subscribe` wiring and the README contract |
 | Is it a panel that watches child fields, or does it react to custom events? | Selects the subscribe pattern |
-| Expected behaviour to prove (what the user does, what the model should hold, how often rules fire) | Assertions of the e2e test in Step 8 |
+| Expected behaviour (what the user does, what the model should hold, how often rules fire) | What the review in Step 8 checks, and what the user verifies in Step 9 |
 
 Supported base types: `text-input`, `number-input`, `drop-down`, `button`, `checkbox`, `radio-group`, `checkbox-group`, `panel`, `date-input`, `multiline-input`, `file-input`, `email`, `telephone-input`.
 
@@ -63,7 +58,7 @@ If `package.json` has a `create:custom-component` script, run it from the reposi
 npm run create:custom-component -- --name <name> --base <base-type>
 ```
 
-It creates `blocks/form/components/<name>/{<name>.js,<name>.css,_<name>.json}` and usually also registers the component (mappings, `_form.json` filter, `models/_component-definition.json`). **Do not assume it did — Step 8 verifies.**
+It creates `blocks/form/components/<name>/{<name>.js,<name>.css,_<name>.json}` and usually also registers the component (mappings, `_form.json` filter, `models/_component-definition.json`). **Do not assume it did. Step 8 checks it.**
 
 If the script does not exist, create the three files by hand: copy the base type's `blocks/form/models/form-components/_<base>.json`, set `definitions[0].id` and `models[0].id` to `<name>`, set `template["fd:viewType"]` to `<name>`, and fix `"..."` include paths so they resolve from the component folder (`../../models/form-common/...`).
 
@@ -104,7 +99,7 @@ Implementation rules:
 2. If the component has no stylesheet, add it to `NO_CSS_COMPONENTS` when the project defines that set; otherwise keep `<name>.css`.
 3. `blocks/form/_form.json` — make sure `<name>` is in the `"form"` filter `components` so authors can insert it.
 4. `models/_component-definition.json` — make sure the custom-components group includes `../blocks/form/components/<name>/_<name>.json#/definitions` (unless the project includes components by glob).
-5. Repository lint limits: check the project's ESLint config (`.eslintrc.cjs`, `eslint.config.*`, …) for per-model limits. The xwalk config usually sets `'xwalk/max-cells'`: it limits each model in the built `component-models.json` to 4 cells unless the model id has its own entry. A form component inherits its base type's fields, so it needs one. Add `'<name>': <cells>` next to the existing entries. The validator (Step 8, gate A) reports the exact count after `npm run build:json`. Follow any other per-model lint options the repository defines the same way.
+5. Repository lint limits: check the project's ESLint config (`.eslintrc.cjs`, `eslint.config.*`, …) for per-model limits. The xwalk config usually sets `'xwalk/max-cells'`: it limits each model in the built `component-models.json` to 4 cells unless the model id has its own entry. A form component inherits its base type's fields, so it needs one. Count the cells of the resolved model (Step 7) as described in `references/build-json.md` §6, and add `'<name>': <cells>` next to the existing entries. Follow any other per-model lint options the repository defines the same way.
 
 ### Step 6: Document
 
@@ -121,75 +116,55 @@ Create `blocks/form/components/<name>/README.md` (use an existing component READ
 
 If the project keeps a component catalog (for example a `component-registry.md`), add a one-line row for the component too.
 
-### Step 7: Build
+### Step 7: Build the authoring JSON (merge it yourself)
 
-```bash
-npm run build:json
-```
+Do **not** run `npm run build:json`. Do what it does yourself, following `references/build-json.md`:
 
-Merges component JSON into `component-models.json`, `component-definition.json`, and `component-filters.json`. Without it, new properties never reach the Universal Editor.
+1. Resolve the component's model from `_<name>.json`: replace every `"..."` include with the fields it points to (paths are relative to the file that contains the include), until no `"..."` remains.
+2. Insert or replace that model in `component-models.json`, at the position the build would use.
+3. Insert or replace the component's definition in the right group of `component-definition.json` (usually `custom-components`).
+4. Add `<name>` to the `form` filter in `component-filters.json`.
+5. Count the `xwalk/max-cells` cells of the resolved model and update the ESLint config (Step 5.5).
 
-### Step 8: Validate (mandatory)
+Without this, new properties never reach the Universal Editor. Treat the boilerplate's `rating` component (`blocks/form/components/rating/_rating.json` and its entries in the three generated files) as the reference example. Redo this step whenever `_<name>.json` or a file it includes changes.
 
-Do not report the component as done until gates A–D pass. Fix and re-run on failure.
+### Step 8: Review (mandatory)
 
-**A. Static validation** — from the repository root:
+Do not report the component as done until every check below passes. Fix any failure and check again.
 
-```bash
-node <skill-dir>/scripts/validate-component.mjs <name>
-```
+**A. Files and naming**
+- `blocks/form/components/<name>/` contains `<name>.js`, `_<name>.json`, `README.md`, and `<name>.css` (unless it's in `NO_CSS_COMPONENTS`).
+- Folder name = JS file name = `definitions[0].id` = `models[0].id` = `fd:viewType` = `<name>`, all lowercase kebab-case.
+- `_<name>.json` is valid JSON. `fieldType` and `resourceType` match the base type. Every `"..."` include resolves to an existing file and pointer. Field `name`s are unique after resolution.
 
-Checks folder/file naming, valid JSON, definition/model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, `subscribe` import path and `{ listenChanges: true }`, `.js` import extensions, legacy/anti-patterns (`fieldModel.subscribe(…, 'change')`, non-bubbling `change`, `#id` child selectors), README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the build output contains the component, and, when the ESLint config sets `xwalk/max-cells`, whether the built model's cell count fits its limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix); warnings must be fixed or explicitly justified in the report. Use `--json` for machine-readable output.
+**B. JavaScript**
+- ES module with `export default function decorate(...)` that returns `fieldDiv`.
+- `subscribe` is imported from `'../../rules/index.js'` and called with `{ listenChanges: true }`. Every relative import ends in `.js`.
+- None of these legacy patterns: `fieldModel.subscribe(cb, 'change')`, `new Event('change')` without `{ bubbles: true }`, child fields selected by `#id` (use `[data-id="…"]`), custom events handled with `addEventListener`.
+- Every value write is guarded against loops, and the commit timing matches the requirement (blur vs. per keystroke).
 
-**B. Lint** — if `package.json` has a `lint` script, run `npm run lint` and fix every issue in the new/changed files.
+**C. Registration**: `<name>` in `customComponents` (or `OOTBComponentDecorators`) in `mappings.js`, in the `form` filter of `_form.json`, and in `models/_component-definition.json`, each exactly once.
 
-**C. Build** — `npm run build:json` succeeds, and re-running gate A shows `build.json` passing.
+**D. Build output**: the checks in `references/build-json.md` §5 pass. The three generated files are valid JSON, contain no `"..."`, have exactly one entry for `<name>`, and `git diff` shows no other changes.
 
-**D. End-to-end test** — no deployed form or URL is needed. The harness renders a local Edge Delivery Services page whose form block holds a form JSON in `<pre><code>`, loads the project's `head.html` (`aem.js`, `scripts.js`) and serves the repository root, so the real form block, rule engine, `mappings.js` and the component run as in production.
+**E. Lint**: if `package.json` has a `lint` script and `node_modules` is installed, run `npm run lint` and fix every issue in the new or changed files. This includes `xwalk/max-cells`, which lints the generated `component-models.json`. If lint can't run, say so. Don't claim it passed.
 
-1. Generate the test (add `--props '<json>'` for authored property values):
+**F. README**: the sections required in Step 6 are present.
 
-   ```bash
-   node <skill-dir>/scripts/create-e2e-test.mjs <name> --props '{"maxStars":5}'
-   ```
+### Step 9: User verification and feedback
 
-   It writes the tests into the repository's own Playwright test folder: `<testDir>/custom-components/form-harness.js` and `<testDir>/custom-components/<name>/{<name>.form.json,<name>.spec.js}`, where `<testDir>` comes from the repo's Playwright config (default `test/e2e`). Missing folders are created. A minimal root `playwright.config.mjs` is added only if the repo has no Playwright config. It warns if the test folder isn't excluded by `.hlxignore` (it would be published to Edge Delivery Services) or by ESLint. Relay those warnings to the user with the suggested lines; don't edit the ignore files unasked. The form JSON contains a field with `":type": "<name>"` plus a following text field. For panels, add the children the component expects; for rules, add `events`/`rules` to the JSON. Keep `action` ending in `/<form id>`: `createForm()` derives the `formId` passed to components from it, and on a mismatch `subscribe()` callbacks never fire.
-2. Replace every `TODO` in the spec (they fail on purpose). Cover, with the harness helpers `renderForm`, `field`, `getModel`, `setModel`, `dispatchModelEvent`, `trackChanges`:
-   - the component-specific markup after `data-component-status="loaded"`;
-   - each authored property (re-render with a modified copy of the form JSON);
-   - model → UI: `setModel(page, id, 'value', …)` (or `enum`, `visible`, …), then assert the component's UI;
-   - UI → model: click/fill/type as a user, then assert `getModel` and, with `trackChanges`, how many `value` changes rules would see (e.g. exactly 1 for commit-on-complete);
-   - custom events (`dispatchModelEvent(page, id, 'custom:<event>')`) and keyboard operation where relevant.
-3. Run it from the repository root; all tests must pass with none skipped:
+You can't confirm runtime behaviour from code review alone, so give the user concrete steps to verify it:
 
-   ```bash
-   node <skill-dir>/scripts/run-e2e-test.mjs <name>
-   ```
+1. Tell them how to see the component. Either preview a form that uses it locally (for example, `aem up` and a form page with a field whose `:type`/`fd:viewType` is `<name>`), or add it in the Universal Editor after the change is pushed.
+2. List exactly what to try: each interaction, each authored property, model ↔ UI sync (for example, a rule that sets the value), how often change rules should fire, and keyboard use.
+3. Ask whether it looks and behaves as expected and what should change. Use the agent's question tool if it has one.
+4. For each piece of feedback, change the component, redo Step 7 if the JSON changed, re-run Step 8, and ask again. Repeat until the user approves.
 
-   It runs the repo's own Playwright and config on that folder only, without retries and limited to the `chromium` project when the config has one. In other words: `npx playwright test <testDir>/custom-components/<name>/ --project=chromium --retries=0`. The tests become part of the repo's e2e suite, so they also run with its usual command (e.g. `npm run test:e2e`). If the repo's config fails to load, or doesn't exist, the runner falls back to a temporary standalone config (Chromium, no retries, written to the OS temp folder). For example, secure-bank's `globalSetup: … : null` is rejected by newer Playwright. The runner prints why; pass that on to the user so they can fix the repo config. The harness also fails a test on console errors from `/blocks/form/`, including exceptions thrown by `decorate()`: `mappings.js` swallows those and still marks the field `loaded`. If `@playwright/test` is missing (exit 2), install it as a dev dependency (`npm i -D @playwright/test && npx playwright install chromium`). If that is not possible, keep the spec, report the test as not run, and give the command.
-
-`scripts/validate-registration.js` can additionally be evaluated on an already deployed form (`(<file contents>)('<name>')`) to confirm registration there.
-
-### Step 9: Preview and collect feedback
-
-Once gates A–D pass, let the user try the component before you finish.
-
-1. Start the preview from the repository root **as a background process** (it keeps running):
-
-   ```bash
-   node <skill-dir>/scripts/preview-component.mjs <name>
-   ```
-
-   It renders the e2e form JSON (`<testDir>/custom-components/<name>/<name>.form.json`) in a local form block with the project's `aem.js`/`scripts.js`. If the project has `@playwright/test`, it opens a visible Chromium window. An inspector panel shows the field's live model (`value`, `valid`, `visible`, `enabled`, …) and a log of model changes. It prints `PREVIEW_URL=<url>`. Without Playwright or a display (or with `--no-browser`) it only serves the page, so give the user the URL to open. To preview other property values, edit the form JSON or pass `--form <file>`.
-2. Tell the user the URL and what to try: each interaction, the authored properties, and keyboard use. Then ask, using the agent's question tool if it has one: does it look and behave as expected, and what should change?
-3. For each piece of feedback: change the component, add or adjust e2e assertions for the new behaviour, re-run gates A–D, and ask the user to reload the page (files are served fresh on each request). Ask again.
-4. Repeat until the user approves, then stop the preview process.
-
-If the user can't be reached (non-interactive run), skip this step and say so in the report, with the preview command.
+If the user can't be reached (non-interactive run), skip the questions and include the verification steps in the report.
 
 ### Step 10: Report
 
-Finish with: files created/changed, the validator summary (errors/warnings), lint and build results, the e2e results (passed/failed per test, or why it could not run), the preview feedback rounds and changes made (or why the preview was skipped), and any justified warnings.
+Finish with: the files created or changed (including the three generated JSON files and the ESLint config), the results of each Step 8 check, the lint result (or why it couldn't run), the `xwalk/max-cells` count, the feedback rounds and changes made (or the browser verification steps if the user wasn't reachable), and anything left open.
 
 ---
 
@@ -204,6 +179,7 @@ Finish with: files created/changed, the validator summary (errors/warnings), lin
 | `blocks/form/mappings.js` | Registration (`customComponents`, `OOTBComponentDecorators`) |
 | `blocks/form/_form.json` | `"form"` filter — which components authors can insert |
 | `models/_component-definition.json` | Component palette (custom-components group) |
+| `component-models.json`, `component-definition.json`, `component-filters.json` | Generated (built) authoring JSON that the Universal Editor reads. Updated by hand in Step 7 |
 | `blocks/form/rules/index.js` | `subscribe` source |
 
 ## Common mistakes
@@ -211,7 +187,7 @@ Finish with: files created/changed, the validator summary (errors/warnings), lin
 | Mistake | Fix |
 |---------|-----|
 | Folder name ≠ JS file name ≠ `fd:viewType` | All three must be identical |
-| Not in `customComponents` | JS/CSS never load — validator `register.mappings` |
+| Not in `customComponents` | JS/CSS never load (Step 8 C) |
 | `subscribe` without `{ listenChanges: true }` or legacy `fieldModel.subscribe(cb, 'change')` | Use the standard pattern in `references/subscribe-api.md` |
 | Child field selected with `#id` | Use `[data-id="${child.id}"]` (the wrapper) |
 | Custom event handled via `addEventListener` | `fieldModel.subscribe(cb, '<event>')` in `'register'` |
@@ -219,11 +195,12 @@ Finish with: files created/changed, the validator summary (errors/warnings), lin
 | Setting `model.value` inside its own change handler | Compare before assigning |
 | Assuming the model updates while the user types | OOTB commits on blur (`change`); handle `input` in the component if rules need each keystroke, and document it in `## Model Properties Set` |
 | Dispatching `change` on every keystroke while formatting | Turns the blur commit into a per-keystroke one; let the native `change` commit, or commit deliberately |
-| Forgot `npm run build:json` | Properties missing in the Universal Editor — validator `build.json` |
-| No `xwalk/max-cells` entry for the new model | `npm run lint` fails with "Avoid using more than 4 cells"; add `'<name>': <cells>` to the ESLint config. Validator `lint.max-cells` gives the number |
-| Reporting done without running Step 8 | Always run gates A–D; report any gate that could not run |
-| Leaving the preview server running | Stop the background preview process once the user approves or the step is skipped |
-| Trusting `data-component-status="loaded"` alone | It is set even when `decorate()` throws — the e2e harness checks the console |
+| Generated JSON not updated (Step 7) | Properties missing in the Universal Editor. Merge the model, definition and filter into the three root `component-*.json` files |
+| `"..."` left in the generated JSON, or include path resolved from the repo root | Resolve each include relative to the file that contains it, recursively, until no `"..."` remains |
+| Hand-patching single fields in `component-models.json` | Re-resolve and replace the whole model entry so it matches the source |
+| No `xwalk/max-cells` entry for the new model | `npm run lint` fails with "Avoid using more than 4 cells"; add `'<name>': <cells>` to the ESLint config, counted as in `references/build-json.md` §6 |
+| Reporting done without running Step 8 | Always run every Step 8 check, and report any check that could not run |
+| Trusting `data-component-status="loaded"` alone | It is set even when `decorate()` throws (`mappings.js` swallows the error). Ask the user to check the browser console too |
 
 ## Example
 
@@ -232,6 +209,7 @@ Finish with: files created/changed, the validator summary (errors/warnings), lin
 1. Scaffold `npm run create:custom-component -- --name star-rating --base number-input`.
 2. `_star-rating.json`: add `{ "component": "number", "name": "maxStars", "label": "Maximum stars", "valueType": "number" }`.
 3. `star-rating.js`: hide the number input, render `maxStars` buttons, set `model.value` on click, sync the selected stars on `'change'` of `value`, using `subscribe(..., { listenChanges: true })`.
-4. Register in `mappings.js` / `_form.json`, write `README.md`, run `npm run build:json`.
-5. `node <skill-dir>/scripts/validate-component.mjs star-rating` → `PASS: 0 error(s)`; `npm run lint` clean.
-6. `node <skill-dir>/scripts/create-e2e-test.mjs star-rating --props '{"maxStars":5}'`, then write the spec: the stars render, `maxStars: 3` renders 3 stars, `setModel(… 'value', 4)` selects 4 stars, clicking star 3 sets the model to `3` with exactly one `value` change, keyboard Enter on a star works. Then `node <skill-dir>/scripts/run-e2e-test.mjs star-rating` → all passed.
+4. Register in `mappings.js` / `_form.json` / `models/_component-definition.json`, and write `README.md`.
+5. Build by hand: resolve `_star-rating.json`'s includes into a flat `star-rating` model in `component-models.json` (next to `rating`), add its definition to the `custom-components` group in `component-definition.json`, and add `star-rating` to the `form` filter in `component-filters.json`. Count the resolved model's cells (the base `number-input` fields plus `maxStars`) and add `'star-rating': <count>` to `xwalk/max-cells`.
+6. Review (Step 8): all checks pass, and `npm run lint` is clean.
+7. Ask the user to verify: the stars render, `maxStars: 3` renders 3 stars, a rule that sets the value to 4 selects 4 stars, clicking star 3 sets the value to `3` and fires change rules once, and Enter on a star works from the keyboard.

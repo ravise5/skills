@@ -152,7 +152,7 @@ When defining fields in your custom component's JSON (for any field group—basi
 7. **Register your component** by setting `fd:viewType` in your component's JSON schema to your component's name (e.g., `countdown-timer`). The runtime uses this as the `:type` property to load the component. Alternatively, components can be identified via `properties.variant` set in authoring (checked against `customComponents` only).
 8. **Update `mappings.js`:** Add your component's name to the `OOTBComponentDecorators` (for OOTB-style components) or `customComponents` list so it is recognized and loaded by the system.
 9. **Update `_form.json`:** Add your component's name to the `"form"` filter `components` array so authors can insert it in the Universal Editor (the project scaffolder does this automatically).
-10. **Run the build:json script:** Execute `npm run build:json` to compile and merge all component JSON definitions into a single file to be served from the server. This ensures your new component's schema is included in the merged output.
+10. **Update the built JSON:** Merge the component's resolved model, definition, and filter entry into the root `component-models.json`, `component-definition.json`, and `component-filters.json` by hand. These are the files `npm run build:json` would generate. See [build-json.md](./build-json.md) for how to resolve `"..."` includes and where each entry goes. Without this step, your new component's schema never reaches the Universal Editor.
 
 **JS implementation (`countdown-timer.js`):**
 ```js
