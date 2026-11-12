@@ -235,7 +235,7 @@ Skills for building forms with the AEM Forms Form block on Edge Delivery Service
 
 | Skill | Description |
 |-------|-------------|
-| `create-custom-component` | Create a custom form component extending an OOTB field type — scaffold, authoring schema, `subscribe()` model wiring, `mappings.js` registration, README, `build:json` — and validate it with a static validator, lint/build, and an in-browser runtime check |
+| `create-custom-component` | Create a custom form component extending an OOTB field type — component files, authoring schema, `subscribe()` model wiring, `mappings.js` registration, README, and the built authoring JSON, all written by the agent (no scaffolder or helper scripts) — then review it and verify it with the user |
 
 ##### AEM 6.5 LTS
 

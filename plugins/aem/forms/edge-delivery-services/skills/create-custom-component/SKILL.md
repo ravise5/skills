@@ -1,6 +1,6 @@
 ---
 name: create-custom-component
-description: "Create a custom form component for an AEM Forms Edge Delivery Services (Form block) project — scaffold blocks/form/components/<name>, extend an OOTB field type (text-input, drop-down, panel, etc.), define authoring properties in _<name>.json, wire the decorate function to the form model with subscribe(), register it in mappings.js, merge the authoring JSON into the built component-*.json files, and review the output. Use when a user asks to create, scaffold, build, or fix a custom form component, form field widget, or viewType in an aem-boilerplate-forms project."
+description: "Create a custom form component for an AEM Forms Edge Delivery Services (Form block) project — create blocks/form/components/<name>, extend an OOTB field type (text-input, drop-down, panel, etc.), define authoring properties in _<name>.json, wire the decorate function to the form model with subscribe(), register it in mappings.js, merge the authoring JSON into the built component-*.json files, and review the output. Use when a user asks to create, scaffold, build, or fix a custom form component, form field widget, or viewType in an aem-boilerplate-forms project."
 license: Apache-2.0
 metadata:
   version: "1.0.0"
@@ -8,7 +8,7 @@ metadata:
 
 # Create Custom Form Component
 
-Build a custom component for the AEM Forms **Form block** on Edge Delivery Services end to end — scaffold, authoring schema, `decorate` logic, model subscriptions, registration, built authoring JSON, documentation — and **review** it before reporting done.
+Build a custom component for the AEM Forms **Form block** on Edge Delivery Services end to end — component files, authoring schema, `decorate` logic, model subscriptions, registration, built authoring JSON, documentation — and **review** it before reporting done.
 
 ## When to use
 
@@ -50,17 +50,62 @@ Supported base types: `text-input`, `number-input`, `drop-down`, `button`, `chec
 
 Check the name is not already used: `blocks/form/components/<name>/` must not exist and `<name>` must not be in `mappings.js`.
 
-### Step 2: Scaffold
+### Step 2: Create the component files
 
-If `package.json` has a `create:custom-component` script, run it from the repository root (install dependencies first if `node_modules` is missing):
+Don't run a scaffolding command (such as `npm run create:custom-component`), even if the project has one. Create the files yourself. The steps below produce the same result as the boilerplate's `tools/forms-scaffolder.js`, and Step 5 does its registration.
 
-```bash
-npm run create:custom-component -- --name <name> --base <base-type>
-```
+Create `blocks/form/components/<name>/` with three files:
 
-It creates `blocks/form/components/<name>/{<name>.js,<name>.css,_<name>.json}` and usually also registers the component (mappings, `_form.json` filter, `models/_component-definition.json`). **Do not assume it did. Step 8 checks it.**
+1. **`_<name>.json`**: start from a copy of the base type's `blocks/form/models/form-components/_<base>.json` (for example `_number-input.json`), then:
+   - `definitions[0].id` → `<name>`, `definitions[0].title` and `template["jcr:title"]` → a display title (`star-rating` → `Star rating`).
+   - Add `template["fd:viewType"]: "<name>"`. Keep `resourceType`, `fieldType` and every other template key from the base.
+   - `models[0].id` → `<name>`.
+   - Rewrite every `"..."` include path for the new folder: `../form-common/<file>` becomes `../../models/form-common/<file>`. Keep the `#/fields` pointer. Paths resolve relative to the file that contains them, and the component folder is two levels deeper than `models/form-components/`.
+   - If the base file doesn't exist, write a minimal file with one definition (the base's `resourceType` and `fieldType` plus `fd:viewType`) and one model whose fields include `{ "...": "../../models/form-common/_basic-input-fields.json#/fields" }` and `{ "...": "../../models/form-common/_help-container.json#/fields" }`. Check that those files exist first.
 
-If the script does not exist, create the three files by hand: copy the base type's `blocks/form/models/form-components/_<base>.json`, set `definitions[0].id` and `models[0].id` to `<name>`, set `template["fd:viewType"]` to `<name>`, and fix `"..."` include paths so they resolve from the component folder (`../../models/form-common/...`).
+   Example for `number-input` → `star-rating`:
+
+   ```json
+   {
+     "definitions": [{
+       "title": "Star rating",
+       "id": "star-rating",
+       "plugins": { "xwalk": { "page": {
+         "resourceType": "core/fd/components/form/numberinput/v1/numberinput",
+         "template": { "jcr:title": "Star rating", "fieldType": "number-input", "fd:viewType": "star-rating" }
+       } } }
+     }],
+     "models": [{
+       "id": "star-rating",
+       "fields": [
+         { "component": "tab", "label": "Basic", "name": "basic" },
+         { "...": "../../models/form-common/_basic-input-placeholder-fields.json#/fields" }
+       ]
+     }]
+   }
+   ```
+
+   (`fields` is abridged here. Copy all of the base's fields.)
+
+2. **`<name>.js`**: an ES module with the `decorate` signature. You implement it in Step 4:
+
+   ```js
+   import { subscribe } from '../../rules/index.js';
+
+   /**
+    * @param {HTMLElement} fieldDiv - The field wrapper with the base type's HTML.
+    * @param {Object} fieldJson - The field's form JSON (authored properties in fieldJson.properties).
+    * @param {HTMLElement} container - The parent element.
+    * @param {string} formId - The form id.
+    */
+   export default function decorate(fieldDiv, fieldJson, container, formId) {
+     return fieldDiv;
+   }
+   ```
+
+3. **`<name>.css`**: styles, prefixed with the component name. If the component needs no CSS, see Step 5.2.
+
+Create a `README.md` in the same folder in Step 6.
 
 ### Step 3: Define authoring properties (`_<name>.json`)
 
@@ -70,7 +115,7 @@ Read `references/authoring-field-types.md` to choose the widget for each propert
 { "...": "../../models/form-common/_basic-validation-fields.json#/fields" }
 ```
 
-Rules: every field has `component` and a unique `name`; `select`/`multiselect`/`radio-group`/`checkbox-group` have `options`; keep `fieldType`, `resourceType`, and `fd:viewType` from the scaffold.
+Rules: every field has `component` and a unique `name`; `select`/`multiselect`/`radio-group`/`checkbox-group` have `options`; keep `fieldType`, `resourceType`, and `fd:viewType` from Step 2.
 
 ### Step 4: Implement `decorate`
 
@@ -97,8 +142,8 @@ Implementation rules:
 
 1. `blocks/form/mappings.js` — add `<name>` to `customComponents` (or to `OOTBComponentDecorators` for OOTB-style decorators). Must exactly equal `fd:viewType`.
 2. If the component has no stylesheet, add it to `NO_CSS_COMPONENTS` when the project defines that set; otherwise keep `<name>.css`.
-3. `blocks/form/_form.json` — make sure `<name>` is in the `"form"` filter `components` so authors can insert it.
-4. `models/_component-definition.json` — make sure the custom-components group includes `../blocks/form/components/<name>/_<name>.json#/definitions` (unless the project includes components by glob).
+3. `blocks/form/_form.json` — append `<name>` to the `"form"` filter `components` so authors can insert it.
+4. `models/_component-definition.json` — append `{ "...": "../blocks/form/components/<name>/_<name>.json#/definitions" }` to the `components` of the `custom-components` group (unless the project includes components by glob).
 5. Repository lint limits: check the project's ESLint config (`.eslintrc.cjs`, `eslint.config.*`, …) for per-model limits. The xwalk config usually sets `'xwalk/max-cells'`: it limits each model in the built `component-models.json` to 4 cells unless the model id has its own entry. A form component inherits its base type's fields, so it needs one. Count the cells of the resolved model (Step 7) as described in `references/build-json.md` §6, and add `'<name>': <cells>` next to the existing entries. Follow any other per-model lint options the repository defines the same way.
 
 ### Step 6: Document
@@ -206,7 +251,7 @@ Finish with: the files created or changed (including the three generated JSON fi
 
 **User:** "Create a star rating component based on number-input with a configurable maximum number of stars."
 
-1. Scaffold `npm run create:custom-component -- --name star-rating --base number-input`.
+1. Create `blocks/form/components/star-rating/` with `_star-rating.json` (copied from `_number-input.json`, ids, title and `fd:viewType` set, include paths rewritten), `star-rating.js` and `star-rating.css`.
 2. `_star-rating.json`: add `{ "component": "number", "name": "maxStars", "label": "Maximum stars", "valueType": "number" }`.
 3. `star-rating.js`: hide the number input, render `maxStars` buttons, set `model.value` on click, sync the selected stars on `'change'` of `value`, using `subscribe(..., { listenChanges: true })`.
 4. Register in `mappings.js` / `_form.json` / `models/_component-definition.json`, and write `README.md`.

@@ -10,7 +10,7 @@ Skills for building forms with **AEM Forms on Edge Delivery Services** — the F
 
 | Skill | Description |
 |-------|-------------|
-| [`create-custom-component`](skills/create-custom-component/SKILL.md) | Create a custom form component that extends an OOTB field type: scaffold, authoring schema (`_<name>.json`), `decorate` + `subscribe()` model wiring, registration in `mappings.js`, README, built authoring JSON (merged by the agent), and review |
+| [`create-custom-component`](skills/create-custom-component/SKILL.md) | Create a custom form component that extends an OOTB field type: component files (created by the agent, no scaffolder), authoring schema (`_<name>.json`), `decorate` + `subscribe()` model wiring, registration in `mappings.js`, README, built authoring JSON (merged by the agent), and review |
 
 ## Built authoring JSON and review
 
