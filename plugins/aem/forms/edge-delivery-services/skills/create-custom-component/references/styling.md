@@ -90,9 +90,9 @@ The form block [adds `.field-invalid` to the field wrapper when showing an error
 
 ## Applying this to a custom component's stylesheet
 
-The `.{Type}-wrapper` class comes from the field's base `fieldType`, not from the component name. A `loan-slider` built on `number-input` renders as `<div class="number-wrapper field-wrapper field-<name>" data-id="…">`: the form block never adds a `.loan-slider-wrapper` class, so a selector such as `.form .loan-slider-wrapper .loan-slider-range` matches nothing and none of its rules apply.
+The `.{Type}-wrapper` class comes from the field's base `fieldType`, not from the component name. A `budget-dial` built on `number-input` renders as `<div class="number-wrapper field-wrapper field-<name>" data-id="…">`: the form block never adds a `.budget-dial-wrapper` class, so a selector such as `.form .budget-dial-wrapper .budget-dial-track` matches nothing and none of its rules apply.
 
-- Start every selector with `.form` and a class that `decorate()` adds, prefixed with the component name: for example, `.form .loan-slider-widget` for the container element that `decorate()` creates.
+- Start every selector with `.form` and a class that `decorate()` adds, prefixed with the component name: for example, `.form .budget-dial-widget` for the container element that `decorate()` creates.
 - To style the field wrapper itself, add the class in `decorate()` (`fieldDiv.classList.add('<name>')`) and target that. Don't style `.{base type}-wrapper` in a component stylesheet: it also matches every other field of the same base type.
 - Use field-name targeting (`.form .field-{name}`) only for one-off, form-specific styling, never in a reusable component's stylesheet.
 - Style validation and interaction states with the state patterns above (validation, `:focus`).
