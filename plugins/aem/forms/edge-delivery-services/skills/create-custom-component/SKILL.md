@@ -168,7 +168,7 @@ If the project keeps a component catalog (for example a `component-registry.md`)
 Do **not** run `npm run build:json`. Do what it does yourself, following `references/build-json.md`:
 
 1. Resolve the component's model from `_<name>.json`: replace every `"..."` include with the fields it points to (paths are relative to the file that contains the include), until no `"..."` remains.
-2. Insert or replace that model in `component-models.json`, at the position the build would use. In the boilerplate, `build:json` expands `./components/*/_*.json#/models` in alphabetical folder order, so the model goes directly after the model of the folder that sorts just before `<name>` in `blocks/form/components/` (for example `image-choice` and `inr-input` go right after `accordion`). Don't append it at the end of the file or next to another custom component such as `range`.
+2. Insert or replace that model in `component-models.json`, at the position the build would use. In the boilerplate, `build:json` expands `./components/*/_*.json#/models` in alphabetical folder order, so the model goes directly after the model of the folder that sorts just before `<name>` in `blocks/form/components/` (for example `color-swatch` goes right after `accordion`, and `signature-pad` right after `rating`). Don't append it at the end of the file or next to another custom component such as `range`.
 3. Insert or replace the component's definition in the right group of `component-definition.json` (usually `custom-components`).
 4. Add `<name>` to the `form` filter in `component-filters.json`.
 5. Count the `xwalk/max-cells` cells of the resolved model and update the ESLint config (Step 5.5).
