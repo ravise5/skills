@@ -1,6 +1,6 @@
 ---
 name: create-custom-component
-description: "Create a custom form component for an AEM Forms Edge Delivery Services (Form block) project — create blocks/form/components/<name>, extend an OOTB field type (text-input, drop-down, panel, etc.), define authoring properties in _<name>.json, wire the decorate function to the form model with subscribe(), register it in mappings.js, merge the authoring JSON into the built component-*.json files, and review the output. Use when a user asks to create, scaffold, build, or fix a custom form component, form field widget, or viewType in an aem-boilerplate-forms project."
+description: "Step-by-step playbook for creating custom AEM Forms Edge Delivery Services (Form block) components that extend OOTB field types, with component files, subscribe wiring, registration, built authoring JSON, and validation. Use when asked to create, scaffold, build, style, or fix a custom form component, field widget, or viewType in an aem-boilerplate-forms project."
 license: Apache-2.0
 metadata:
   version: "1.0.0"
@@ -25,6 +25,7 @@ Not for: generic Edge Delivery Services blocks (use the `building-blocks` skill 
 | `references/form-field-types.md` | Step 4 — the base HTML the `element` parameter already contains |
 | `references/authoring-field-types.md` | Step 3 — widgets for the properties dialog (`text`, `select`, `container`, …) |
 | `references/subscribe-api.md` | Step 4 — `subscribe()` patterns: own value, child fields, custom events |
+| `references/styling.md` | Step 4: writing `<name>.css` (CSS styling patterns: component wrappers, field targeting, state styling) |
 | `references/build-json.md` | Steps 5 and 7 — merge the component into `component-models.json`, `component-definition.json` and `component-filters.json` yourself (what `npm run build:json` does), and count `xwalk/max-cells` |
 | `scripts/validate-component.mjs` | Step 8 — static validator (Node 18+, no dependencies) |
 
@@ -104,7 +105,7 @@ Create `blocks/form/components/<name>/` with three files:
    }
    ```
 
-3. **`<name>.css`**: styles, prefixed with the component name. If the component needs no CSS, see Step 5.2.
+3. **`<name>.css`**: styles, following `references/styling.md` (Step 4). If the component needs no CSS, see Step 5.2.
 
 Create a `README.md` in the same folder in Step 6.
 
@@ -137,7 +138,7 @@ Implementation rules:
 - When writing the value from custom UI, either set `model.value` or dispatch `new Event('change', { bubbles: true })` on the underlying input.
 - Guard against loops: never set `model.value` in a value-change handler without comparing first.
 - Know when the value is committed. Out of the box, the form block writes `model.value` only from the input's native `change` event (`blocks/form/rules/index.js`), which text-like inputs fire on blur/commit, not on each keystroke. So rules on the field's change event run once per edit, when the user leaves the field. If the component must commit on every keystroke (live counters, search-as-you-type, values derived while typing), handle the `input` event in the component and set `model.value` there, comparing with the current value first. When reformatting the display while typing (masks, grouping), don't dispatch `change` on each keystroke, or you turn the blur commit into a per-keystroke one.
-- Prefix CSS classes with the component name in `<name>.css`.
+- Style the component in `<name>.css` following `references/styling.md`: selector scoping, and validation and focus states.
 
 ### Step 5: Register
 
