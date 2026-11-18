@@ -167,6 +167,31 @@ test('built model with an unresolved "..." include is an error', () => {
   assert.equal(resolved.checks.find((c) => c.id === 'build.unresolved'), undefined);
 });
 
+test('built model must sit where build:json puts it (alphabetical folder order)', () => {
+  const globForm = JSON.stringify({
+    models: [{ id: 'form', fields: [] }, { '...': './components/*/_*.json#/models' }],
+    filters: [{ id: 'form', components: ['text-input', NAME] }],
+  });
+  const neighbours = {
+    'blocks/form/_form.json': globForm,
+    'blocks/form/components/accordion/_accordion.json': JSON.stringify({ models: [{ id: 'accordion', fields: [] }] }),
+    'blocks/form/components/wizard/_wizard.json': JSON.stringify({ models: [{ id: 'wizard', fields: [] }] }),
+  };
+  const built = (order) => JSON.stringify(order.map((id) => ({ id, fields: [] })));
+
+  const misplaced = run({ ...neighbours, 'component-models.json': built(['form', 'accordion', 'wizard', 'hero', NAME]) });
+  assert.equal(misplaced.status, 'fail');
+  const err = misplaced.checks.find((c) => c.id === 'build.order');
+  assert.equal(err?.level, 'error');
+  assert.match(err.message, /after the "accordion" model/);
+
+  const placed = run({ ...neighbours, 'component-models.json': built(['form', 'accordion', NAME, 'wizard', 'hero']) });
+  assert.equal(placed.checks.find((c) => c.id === 'build.order')?.level, 'pass');
+
+  const noGlob = run({ 'component-models.json': built(['hero', NAME]) });
+  assert.equal(noGlob.checks.find((c) => c.id === 'build.order'), undefined);
+});
+
 test('CLI: exit codes, --json output and --help writes nothing', () => {
   const root = makeProject({ 'blocks/form/mappings.js': 'let customComponents = [];\n' });
   try {

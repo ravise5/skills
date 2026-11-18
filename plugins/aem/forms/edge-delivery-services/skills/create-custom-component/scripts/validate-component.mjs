@@ -388,6 +388,40 @@ export function validateComponent(name, rootDir) {
     if (builtModel && JSON.stringify(builtModel).includes('"..."')) {
       error('build.unresolved', `Built model "${name}" in component-models.json still contains a "..." include — resolve it relative to the file that contains it (references/build-json.md)`);
     }
+    if (builtModel) checkBuiltModelOrder(models);
+  }
+
+  // build:json expands `./components/*/_*.json#/models` (blocks/form/_form.json) in alphabetical path
+  // order, so the model must sit between the models of its alphabetical neighbour folders.
+  function checkBuiltModelOrder(models) {
+    const formSrc = readText(join(formDir, '_form.json')) || '';
+    if (!/"\.\/components\/\*\/_\*\.json#\/models"/.test(formSrc)) return;
+    const componentsDir = join(formDir, 'components');
+    const expected = [];
+    readdirSync(componentsDir).sort().forEach((dir) => {
+      const d = join(componentsDir, dir);
+      if (!statSync(d).isDirectory()) return;
+      readdirSync(d).filter((f) => /^_.*\.json$/.test(f)).sort().forEach((f) => {
+        try {
+          const src = JSON.parse(readFileSync(join(d, f), 'utf8'));
+          (Array.isArray(src.models) ? src.models : []).forEach((m) => { if (m?.id) expected.push(m.id); });
+        } catch { /* invalid JSON is reported by the schema checks */ }
+      });
+    });
+    const builtIds = models.map((m) => m?.id);
+    const present = expected.filter((id) => builtIds.includes(id));
+    const i = present.indexOf(name);
+    if (i === -1) return;
+    const idx = builtIds.indexOf(name);
+    const prev = present[i - 1];
+    const next = present[i + 1];
+    const ok = prev !== undefined ? builtIds[idx - 1] === prev : (next === undefined || builtIds[idx + 1] === next);
+    if (ok) {
+      pass('build.order', `Model "${name}" is where build:json puts it (alphabetical folder order${prev ? `, after "${prev}"` : ''})`);
+    } else {
+      const where = prev !== undefined ? `directly after the "${prev}" model` : `directly before the "${next}" model`;
+      error('build.order', `Model "${name}" is at index ${idx} of component-models.json (after "${builtIds[idx - 1]}"), but build:json places blocks/form/components/* models in alphabetical folder order — move it ${where} so a later \`npm run build:json\` produces no diff (references/build-json.md §2)`);
+    }
   }
 
   // ---- repository lint limits (eslint-plugin-xwalk max-cells) ------------------------

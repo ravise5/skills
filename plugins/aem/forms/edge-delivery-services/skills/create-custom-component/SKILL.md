@@ -167,7 +167,7 @@ If the project keeps a component catalog (for example a `component-registry.md`)
 Do **not** run `npm run build:json`. Do what it does yourself, following `references/build-json.md`:
 
 1. Resolve the component's model from `_<name>.json`: replace every `"..."` include with the fields it points to (paths are relative to the file that contains the include), until no `"..."` remains.
-2. Insert or replace that model in `component-models.json`, at the position the build would use.
+2. Insert or replace that model in `component-models.json`, at the position the build would use. In the boilerplate, `build:json` expands `./components/*/_*.json#/models` in alphabetical folder order, so the model goes directly after the model of the folder that sorts just before `<name>` in `blocks/form/components/` (for example `image-choice` and `inr-input` go right after `accordion`). Don't append it at the end of the file or next to another custom component such as `range`.
 3. Insert or replace the component's definition in the right group of `component-definition.json` (usually `custom-components`).
 4. Add `<name>` to the `form` filter in `component-filters.json`.
 5. Count the `xwalk/max-cells` cells of the resolved model and update the ESLint config (Step 5.5).
@@ -184,7 +184,7 @@ First run the static validator from the repository root:
 node <skill-dir>/scripts/validate-component.mjs <name>
 ```
 
-It automates most of checks A–D below: folder and file naming, valid JSON, definition and model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, the `subscribe` import and `{ listenChanges: true }`, `.js` import extensions, legacy patterns, README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the hand-merged `component-models.json` and `component-definition.json` contain the component with no `"..."` left, and the `xwalk/max-cells` limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix). Fix warnings or justify them in the report. Use `--json` for machine-readable output. Then go through the checklist for what it can't check (loop guards, commit timing, `component-filters.json`, an unchanged `git diff` for other entries).
+It automates most of checks A–D below: folder and file naming, valid JSON, definition and model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, the `subscribe` import and `{ listenChanges: true }`, `.js` import extensions, legacy patterns, README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the hand-merged `component-models.json` and `component-definition.json` contain the component with no `"..."` left, whether the model sits where `build:json` would put it (`build.order`, which names the entry to place it after), and the `xwalk/max-cells` limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix). Fix warnings or justify them in the report. Use `--json` for machine-readable output. Then go through the checklist for what it can't check (loop guards, commit timing, `component-filters.json`, an unchanged `git diff` for other entries).
 
 **A. Files and naming**
 - `blocks/form/components/<name>/` contains `<name>.js`, `_<name>.json`, `README.md`, and `<name>.css` (unless it's in `NO_CSS_COMPONENTS`).
@@ -252,6 +252,7 @@ Finish with: the files created or changed (including the three generated JSON fi
 | Generated JSON not updated (Step 7) | Properties missing in the Universal Editor. Merge the model, definition and filter into the three root `component-*.json` files |
 | `"..."` left in the generated JSON, or include path resolved from the repo root | Resolve each include relative to the file that contains it, recursively, until no `"..."` remains |
 | Hand-patching single fields in `component-models.json` | Re-resolve and replace the whole model entry so it matches the source |
+| Model appended at the end of `component-models.json` or next to `range` | Place it in alphabetical folder order among the `blocks/form/components/*` models, or the next `npm run build:json` reorders the file (validator `build.order`) |
 | No `xwalk/max-cells` entry for the new model | `npm run lint` fails with "Avoid using more than 4 cells"; add `'<name>': <cells>` to the ESLint config, counted as in `references/build-json.md` §6 |
 | Reporting done without running Step 8 | Always run every Step 8 check, and report any check that could not run |
 | Trusting `data-component-status="loaded"` alone | It is set even when `decorate()` throws (`mappings.js` swallows the error). Ask the user to check the browser console too |
