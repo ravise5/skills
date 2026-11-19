@@ -25,7 +25,7 @@ Not for: generic Edge Delivery Services blocks (use the `building-blocks` skill 
 | `references/form-field-types.md` | Step 4 — the base HTML the `element` parameter already contains |
 | `references/authoring-field-types.md` | Step 3 — widgets for the properties dialog (`text`, `select`, `container`, …) |
 | `references/subscribe-api.md` | Step 4 — `subscribe()` patterns: own value, child fields, custom events |
-| `references/styling.md` | Step 4: writing `<name>.css` (CSS styling patterns: component wrappers, field targeting, state styling) |
+| `references/styling.md` | Step 4: writing `<name>.css` (selector scoping, field-type wrapper classes, state styling) |
 | `references/build-json.md` | Steps 5 and 7 — merge the component into `component-models.json`, `component-definition.json` and `component-filters.json` yourself (what `npm run build:json` does), and count `xwalk/max-cells` |
 | `scripts/validate-component.mjs` | Step 8 — static validator (Node 18+, no dependencies) |
 
@@ -138,7 +138,7 @@ Implementation rules:
 - When writing the value from custom UI, either set `model.value` or dispatch `new Event('change', { bubbles: true })` on the underlying input.
 - Guard against loops: never set `model.value` in a value-change handler without comparing first.
 - Know when the value is committed. Out of the box, the form block writes `model.value` only from the input's native `change` event (`blocks/form/rules/index.js`), which text-like inputs fire on blur/commit, not on each keystroke. So rules on the field's change event run once per edit, when the user leaves the field. If the component must commit on every keystroke (live counters, search-as-you-type, values derived while typing), handle the `input` event in the component and set `model.value` there, comparing with the current value first. When reformatting the display while typing (masks, grouping), don't dispatch `change` on each keystroke, or you turn the blur commit into a per-keystroke one.
-- Style the component in `<name>.css` following `references/styling.md`: selector scoping, and validation and focus states.
+- Style the component in `<name>.css` following `references/styling.md`: selector scoping, and validation and focus states. Start selectors with `.form` and a class `decorate()` adds: wrappers are named after the base field type (`.number-wrapper`), so `.<name>-wrapper` matches nothing.
 
 ### Step 5: Register
 
@@ -185,7 +185,7 @@ First run the static validator from the repository root:
 node <skill-dir>/scripts/validate-component.mjs <name>
 ```
 
-It automates most of checks A–D below: folder and file naming, valid JSON, definition and model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, the `subscribe` import and `{ listenChanges: true }`, `.js` import extensions, legacy patterns, README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the hand-merged `component-models.json` and `component-definition.json` contain the component with no `"..."` left, whether the model sits where `build:json` would put it (`build.order`, which names the entry to place it after), and the `xwalk/max-cells` limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix). Fix warnings or justify them in the report. Use `--json` for machine-readable output. Then go through the checklist for what it can't check (loop guards, commit timing, `component-filters.json`, an unchanged `git diff` for other entries).
+It automates most of checks A–D below: folder and file naming, valid JSON, definition and model ids, `fd:viewType` = name, `fieldType`/`resourceType`, resolvable `"..."` includes, unique field names, ES-module syntax, default export, the `subscribe` import and `{ listenChanges: true }`, `.js` import extensions, legacy patterns, dead CSS selectors, README sections, registration in `mappings.js` / `_form.json` / `_component-definition.json`, whether the hand-merged `component-models.json` and `component-definition.json` contain the component with no `"..."` left, whether the model sits where `build:json` would put it (`build.order`, which names the entry to place it after), and the `xwalk/max-cells` limit (it prints the entry to add). Exit `0` = no errors; `1` = errors (must fix). Fix warnings or justify them in the report. Use `--json` for machine-readable output. Then go through the checklist for what it can't check (loop guards, commit timing, `component-filters.json`, an unchanged `git diff` for other entries).
 
 **A. Files and naming**
 - `blocks/form/components/<name>/` contains `<name>.js`, `_<name>.json`, `README.md`, and `<name>.css` (unless it's in `NO_CSS_COMPONENTS`).
@@ -256,6 +256,7 @@ Finish with: the files created or changed (including the three generated JSON fi
 | Model appended at the end of `component-models.json` or next to `range` | Place it in alphabetical folder order among the `blocks/form/components/*` models, or the next `npm run build:json` reorders the file (validator `build.order`) |
 | No `xwalk/max-cells` entry for the new model | `npm run lint` fails with "Avoid using more than 4 cells"; add `'<name>': <cells>` to the ESLint config, counted as in `references/build-json.md` §6 |
 | Reporting done without running Step 8 | Always run every Step 8 check, and report any check that could not run |
+| CSS under `.<name>-wrapper` | Never applies; use classes `decorate()` adds — validator `css.selectors` |
 | Trusting `data-component-status="loaded"` alone | It is set even when `decorate()` throws (`mappings.js` swallows the error). Ask the user to check the browser console too |
 
 ## Example
